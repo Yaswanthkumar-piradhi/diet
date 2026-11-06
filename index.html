@@ -101,6 +101,12 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .items .itxt{flex:1}
 .items .imac{font-size:.72rem;color:var(--muted);white-space:nowrap}
 .info-i{flex:none;width:21px;height:21px;border-radius:50%;border:1px solid var(--accent);color:var(--accent);background:var(--accent-soft);font-size:.72rem;font-weight:800;line-height:1;display:grid;place-items:center;font-family:var(--display)}
+.it-cant{flex:none;width:21px;height:21px;border-radius:50%;border:1px solid var(--bad);color:var(--bad);background:var(--bad-soft);font-size:.7rem;font-weight:800;line-height:1;display:grid;place-items:center}
+.items li.it-skip{opacity:.65}
+.items li s{color:var(--muted)}
+.skiptag{font-size:.62rem;font-weight:800;color:var(--bad);background:var(--bad-soft);padding:1px 6px;border-radius:999px;margin-left:5px;white-space:nowrap}
+.swaptag{font-size:.62rem;font-weight:800;color:var(--p2);background:var(--p2-soft);padding:1px 6px;border-radius:999px;margin-left:5px;white-space:nowrap}
+.it-undo{margin-left:auto;border:0;background:transparent;color:var(--p2);font-weight:800;font-size:.78rem;text-decoration:underline}
 .swapnote{padding:4px 14px 0;font-size:.74rem;color:var(--p2)}
 .actions{display:flex;gap:8px;padding:12px 14px}
 .actions button{flex:1;border-radius:10px;padding:10px 6px;font-size:.82rem;font-weight:800;border:1px solid var(--line);background:var(--surface);color:var(--fg);display:flex;align-items:center;justify-content:center;gap:5px}
@@ -420,22 +426,53 @@ function saveUI(){try{localStorage.setItem(LSKEY+"_ui",JSON.stringify({person:AP
 
 /* ---------- macro computations for a day ---------- */
 function slotDishId(person,date,slot){const r=rec(person,date);const m=r.meals[slot];if(m&&m.swap&&DISH[m.swap])return m.swap;return planForIndex(dayIndex(date))[slot];}
-function dayConsumed(person,date){
- const who=PEOPLE[person].who,r=rec(person,date),t=zero();
- for(const[slot] of SLOTS){const m=r.meals[slot];if(m&&m.s==="taken")add(t,dishMacros(slotDishId(person,date,slot),who));}
- for(const e of r.extras)add(t,e.mac||boostMac(e.id));
- return t;
+/* ---------- per-item swap/skip ---------- */
+const ROLE={chicken:"protein_main",fish:"protein_main",mutton:"protein_main",paneer:"protein_main",egg:"protein_main",whey:"protein_main",
+ roastedchana:"protein_snack",sprouts:"protein_snack",
+ oats40:"carb",rice:"carb",roti:"carb",poha:"carb",toast:"carb",besan:"carb",moong:"carb",
+ dal:"legume",rajma:"legume",chana:"legume",
+ banana:"fruit",apple:"fruit",guava:"fruit",orange:"fruit",papaya:"fruit",dates:"fruit",
+ almond:"nut",walnut:"nut",pb:"nut",
+ chia:"seed",flax:"seed",pumpkin:"seed",sunflower:"seed",sesame:"seed",
+ milk:"dairy",curd:"dairy",greekcurd:"dairy"};
+const REPL={
+ protein_main:["chicken","fish","paneer","egg","mutton","whey"],
+ protein_snack:["roastedchana","sprouts","egg","whey","paneer"],
+ carb:["rice","roti","poha","oats40"],
+ legume:["dal","rajma","chana"],
+ fruit:["banana","apple","guava","orange","papaya"],
+ nut:["almond","walnut","pb"],
+ seed:["chia","flax","pumpkin","sunflower"],
+ dairy:["curd","greekcurd","milk"]};
+function roundQ(ing,q){
+ if(ing==="egg"||ing==="eggwhite")return Math.max(1,Math.round(q));
+ if(ing==="whey")return Math.min(2,Math.max(1,Math.round(q)));
+ const g=ING[ing];
+ if(g.u==="g"&&g.size===100)return Math.max(0.5,Math.round(q*4)/4);
+ if(ing==="almond")return Math.max(5,Math.round(q/5)*5);
+ if(g.u==="cup")return Math.max(0.5,Math.round(q*2)/2);
+ return Math.max(1,Math.round(q));
 }
-function daySkipped(person,date){
- const who=PEOPLE[person].who,r=rec(person,date),t=zero();
- for(const[slot] of SLOTS){const m=r.meals[slot];if(m&&m.s==="skipped")add(t,dishMacros(slotDishId(person,date,slot),who));}
- return t;
+function origQof(person,date,slot,key){const who=PEOPLE[person].who,d=DISH[slotDishId(person,date,slot)];if(!d.items)return 1;const row=d.items.find(x=>x[0]===key);return row?(who==="d"?row[1]:row[2]):1;}
+function resolvedItems(person,date,slot){
+ const who=PEOPLE[person].who,id=slotDishId(person,date,slot),d=DISH[id];
+ if(d.relaxed)return{relaxed:true,text:d.note[who],mac:dishMacros(id,who)};
+ const io=((rec(person,date).meals[slot]||{}).io)||{},items=[];
+ for(const[ing,dq,yq] of d.items){const q=who==="d"?dq:yq;if(q<=0)continue;const ov=io[ing];
+  if(ov&&ov.skip){items.push({ing,q,skip:true,key:ing});continue;}
+  if(ov&&ov.to){items.push({ing:ov.to,q:ov.q,from:ing,key:ing});continue;}
+  if(VARIANTS[ing]){const vi=(ov&&ov.vi!=null)?ov.vi:pickVariant(ing,date,slot).idx;items.push({ing,q,vi,key:ing});continue;}
+  items.push({ing,q,key:ing});}
+ return{relaxed:false,items};
 }
-function dayPlanTotal(person,date){
- const who=PEOPLE[person].who,t=zero();const pl=planForIndex(dayIndex(date));
- for(const[slot] of SLOTS)add(t,dishMacros(slotDishId(person,date,slot),who));
- return t;
-}
+function mealMacros2(person,date,slot){const r=resolvedItems(person,date,slot);if(r.relaxed)return r.mac.slice();const t=zero();for(const it of r.items)if(!it.skip)add(t,itMac(it.ing,it.q));return t;}
+function mealFull2(person,date,slot){const r=resolvedItems(person,date,slot);if(r.relaxed)return r.mac.slice();const t=zero();for(const it of r.items)add(t,itMac(it.ing,it.q));return t;}
+function mealSkip2(person,date,slot){const r=resolvedItems(person,date,slot);if(r.relaxed)return zero();const t=zero();for(const it of r.items)if(it.skip)add(t,itMac(it.ing,it.q));return t;}
+function dayConsumed(person,date){const r=rec(person,date),t=zero();for(const[slot] of SLOTS){const m=r.meals[slot];if(m&&m.s==="taken")add(t,mealMacros2(person,date,slot));}for(const e of r.extras)add(t,e.mac||boostMac(e.id));return t;}
+function daySkipped(person,date){const r=rec(person,date),t=zero();for(const[slot] of SLOTS){const m=r.meals[slot]||{};if(m.s==="skipped")add(t,mealFull2(person,date,slot));else add(t,mealSkip2(person,date,slot));}return t;}
+function dayPlanTotal(person,date){const t=zero();for(const[slot] of SLOTS)add(t,mealFull2(person,date,slot));return t;}
+function setIO(person,date,slot,key,val){const r=rec(person,date);r.meals[slot]=r.meals[slot]||{s:"pending"};r.meals[slot].io=r.meals[slot].io||{};r.meals[slot].io[key]=val;saveDB();}
+function clearIO(person,date,slot,key){const r=rec(person,date);if(r.meals[slot]&&r.meals[slot].io)delete r.meals[slot].io[key];saveDB();}
 function mealsTaken(person,date){const r=rec(person,date);let n=0;for(const[s] of SLOTS)if(r.meals[s]&&r.meals[s].s==="taken")n++;return n;}
 function mealsDecided(person,date){const r=rec(person,date);let n=0;for(const[s] of SLOTS){const m=r.meals[s];if(m&&(m.s==="taken"||m.s==="skipped"))n++;}return n;}
 
@@ -516,7 +553,7 @@ function viewToday(){
  }
  // meals
  for(const[slot,slabel] of SLOTS){
-   const r=rec(person,date),m=r.meals[slot]||{s:"pending"},id=slotDishId(person,date,slot),d=DISH[id],mac=dishMacros(id,who);
+   const r=rec(person,date),m=r.meals[slot]||{s:"pending"},id=slotDishId(person,date,slot),d=DISH[id],mac=mealMacros2(person,date,slot);
    const swapped=m.swap&&m.swap===id;
    html+=`<div class="meal ${m.s||"pending"}">
      <div class="meal-h">
@@ -524,22 +561,28 @@ function viewToday(){
        <div style="flex:1"><div class="slot">${slabel}</div><div class="mname">${d.name}</div></div>
        <div class="mmac"><b>${nice(mac[P])}g P</b><br>${nice(mac[F])}g F · ${Math.round(mac[K])} kcal</div>
      </div>`;
-   if(swapped)html+=`<div class="swapnote">↺ swapped from your original plan · <button data-act="unswap" data-slot="${slot}" style="border:0;background:none;color:var(--p2);font-weight:800;text-decoration:underline">undo</button></div>`;
-   if(d.relaxed){
-     html+=`<ul class="items"><li><span class="itxt">${d.note[who]}</span></li></ul>`;
+   if(swapped)html+=`<div class="swapnote">↺ whole meal swapped · <button data-act="unswap" data-slot="${slot}" style="border:0;background:none;color:var(--p2);font-weight:800;text-decoration:underline">undo</button></div>`;
+   const R=resolvedItems(person,date,slot);
+   if(R.relaxed){
+     html+=`<ul class="items"><li><span class="itxt">${R.text}</span></li></ul>`;
    }else{
      html+=`<ul class="items">`;
-     for(const[ing,dq,yq] of d.items){const q=who==="d"?dq:yq;if(q<=0)continue;const im=itMac(ing,q);
+     for(const it of R.items){const im=itMac(it.ing,it.q);
        let label,infoBtn;
-       if(VARIANTS[ing]){const v=pickVariant(ing,date,slot);label=v.obj.name;infoBtn=`<button class="info-i" data-act="vinfo" data-kind="${ing}" data-idx="${v.idx}">i</button>`;}
-       else{label=fmtItem(ing,q);infoBtn=ING[ing].info?`<button class="info-i" data-act="info" data-ing="${ing}">i</button>`:"";}
-       html+=`<li><span class="itxt">${label}</span><span class="imac">${nice(im[P])}p</span>${infoBtn}</li>`;}
+       if(it.vi!=null){label=VARIANTS[it.key][it.vi].name;infoBtn=`<button class="info-i" data-act="vinfo" data-kind="${it.key}" data-idx="${it.vi}">i</button>`;}
+       else{label=fmtItem(it.ing,it.q);infoBtn=ING[it.ing].info?`<button class="info-i" data-act="info" data-ing="${it.ing}">i</button>`:"";}
+       if(it.skip){
+         html+=`<li class="it-skip"><span class="itxt"><s>${label}</s><span class="skiptag">can't take</span></span><button class="it-undo" data-act="itemundo" data-slot="${slot}" data-key="${it.key}">undo</button></li>`;
+       }else{
+         html+=`<li><span class="itxt">${label}${it.from?`<span class="swaptag">swapped</span>`:""}</span><span class="imac">${nice(im[P])}p</span>${infoBtn}<button class="it-cant" data-act="itemcant" data-slot="${slot}" data-key="${it.key}" title="Can't take this">✕</button></li>`;
+       }
+     }
      html+=`</ul>`;
    }
    html+=`<div class="actions">
      <button class="take ${m.s==="taken"?"on":""}" data-act="status" data-slot="${slot}" data-s="taken">✓ Taken</button>
-     <button class="skip ${m.s==="skipped"?"on":""}" data-act="status" data-slot="${slot}" data-s="skipped">✕ Skipped</button>
-     <button class="cant" data-act="swap" data-slot="${slot}">↺ Can't take</button>
+     <button class="skip ${m.s==="skipped"?"on":""}" data-act="status" data-slot="${slot}" data-s="skipped">✕ Skip all</button>
+     <button class="cant" data-act="swap" data-slot="${slot}">↺ Swap meal</button>
    </div></div>`;
  }
  // extras
@@ -704,6 +747,28 @@ function swapSheet(slot){
  openSheet(html);
 }
 function slotForPlanOrSwap(person,slot){const m=rec(person,APP.date).meals[slot];if(m&&m.swap)return m.swap;return planForIndex(dayIndex(APP.date))[slot];}
+function itemSheet(slot,key){
+ const person=APP.person,date=APP.date,io=((rec(person,date).meals[slot]||{}).io)||{},cur=io[key];
+ const kindLabel=key==="salad"?"salad":key==="soup"?"soup":key==="sprouts"?"sprout dish":"sabzi";
+ let html=`<div class="sheet-h"><h3>Can't take this item?</h3><button class="x" data-act="close">×</button></div>`;
+ if(VARIANTS[key]){
+   html+=`<p class="small" style="margin:-4px 0 12px">Pick a different ${kindLabel}, or skip it — the protein &amp; fibre you'd lose is carried over.</p>`;
+   html+=`<button class="swapopt" data-act="itemskip" data-slot="${slot}" data-key="${key}"><span class="so-n">Skip it today</span><span class="so-m">carry over</span></button>`;
+   const defIdx=pickVariant(key,date,slot).idx;
+   VARIANTS[key].forEach((v,i)=>{const on=cur&&cur.vi!=null?cur.vi===i:i===defIdx;html+=`<button class="swapopt ${on?"cur":""}" data-act="itemvar" data-slot="${slot}" data-key="${key}" data-idx="${i}"><span class="so-n">${v.name}${on?" · current":""}</span></button>`;});
+ } else {
+   const origQ=origQof(person,date,slot,key),origMac=itMac(key,origQ),role=ROLE[key]||"misc";
+   html+=`<p class="small" style="margin:-4px 0 12px">Replace <b>${fmtItem(key,origQ)}</b> with something similar, or skip it. Swaps keep your protein close.</p>`;
+   html+=`<button class="swapopt" data-act="itemskip" data-slot="${slot}" data-key="${key}"><span class="so-n">Skip it today</span><span class="so-m">carry over <b>${nice(origMac[P])}g P</b> · ${nice(origMac[F])}g F</span></button>`;
+   if(cur&&(cur.to||cur.skip))html+=`<button class="swapopt" data-act="itemundo" data-slot="${slot}" data-key="${key}"><span class="so-n">↩ Back to original</span><span class="so-m">${fmtItem(key,origQ)}</span></button>`;
+   const by=(role==="protein_main"||role==="protein_snack")?P:K;
+   (REPL[role]||[]).filter(x=>x!==key).forEach(rp=>{
+     let q=ING[rp].k[by]?origMac[by]/ING[rp].k[by]:origMac[K]/ING[rp].k[K];q=roundQ(rp,q);const mm=itMac(rp,q);const on=cur&&cur.to===rp;
+     html+=`<button class="swapopt ${on?"cur":""}" data-act="itemswap" data-slot="${slot}" data-key="${key}" data-to="${rp}" data-q="${q}"><span class="so-n">${fmtItem(rp,q)}${on?" · current":""}</span><span class="so-m"><b>${nice(mm[P])}g P</b> · ${nice(mm[F])}g F · ${Math.round(mm[K])} kcal</span></button>`;
+   });
+ }
+ openSheet(html);
+}
 function settingsSheet(){
  openSheet(`<div class="sheet-h"><h3>Settings</h3><button class="x" data-act="close">×</button></div>
  <div class="infobody">
@@ -731,6 +796,11 @@ document.addEventListener("click",e=>{
  else if(act==="unswap"){const r=rec(person,date),slot=t.dataset.slot;if(r.meals[slot])delete r.meals[slot].swap;saveDB();render();}
  else if(act==="info"){infoSheet(t.dataset.ing);}
  else if(act==="vinfo"){vinfoSheet(t.dataset.kind,Number(t.dataset.idx));}
+ else if(act==="itemcant"){itemSheet(t.dataset.slot,t.dataset.key);}
+ else if(act==="itemskip"){setIO(person,date,t.dataset.slot,t.dataset.key,{skip:true});closeSheet();render();}
+ else if(act==="itemswap"){setIO(person,date,t.dataset.slot,t.dataset.key,{to:t.dataset.to,q:Number(t.dataset.q)});closeSheet();render();}
+ else if(act==="itemvar"){setIO(person,date,t.dataset.slot,t.dataset.key,{vi:Number(t.dataset.idx)});closeSheet();render();}
+ else if(act==="itemundo"){clearIO(person,date,t.dataset.slot,t.dataset.key);closeSheet();render();}
  else if(act==="topup"){const r=rec(person,date);const b=BOOST.find(x=>x.id===t.dataset.b);r.extras.push({id:b.id,label:b.label,mac:b.mac});saveDB();render();}
  else if(act==="rmextra"){const r=rec(person,date);r.extras.splice(Number(t.dataset.i),1);saveDB();render();}
  else if(act==="water"){const r=rec(person,date);r.water=Math.max(0,Math.min(20,r.water+Number(t.dataset.n)));saveDB();render();}
@@ -756,5 +826,6 @@ document.addEventListener("change",e=>{
 
 render();
 </script>
+
 </body>
 </html>
