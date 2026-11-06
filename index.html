@@ -172,6 +172,39 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .gtable td{padding:7px 4px;border-bottom:1px solid var(--line);vertical-align:top}
 .gtable td:first-child{font-weight:800;white-space:nowrap;padding-right:10px}
 /* bottom nav */
+/* gym */
+.restrow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:14px;font-size:.82rem;font-weight:800}
+.restrow button{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:5px 11px;font-weight:800;font-size:.8rem}
+.wkhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+.wkhead h2{font-size:1.4rem}
+.donetag{background:var(--accent);color:#fff;font-size:.72rem;font-weight:800;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.switchw{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.78rem;color:var(--muted);margin-bottom:12px}
+.switchw button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:5px 10px;font-weight:800;font-size:.76rem}
+.switchw button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.warm{background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:12px;padding:11px 13px;font-size:.86rem;margin-bottom:14px}
+.exc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px;box-shadow:var(--sh)}
+.exc.done{border-color:color-mix(in srgb,var(--good) 50%,var(--line))}
+.exc-h{display:flex;align-items:flex-start;gap:9px;margin-bottom:4px}
+.exname{font-weight:800;font-size:1rem;line-height:1.2}
+.extarget{font-size:.78rem;color:var(--muted)}
+.lastline{font-size:.78rem;color:var(--muted);margin-bottom:10px}
+.uphint{color:var(--good);font-weight:800;background:var(--accent-soft);padding:1px 7px;border-radius:999px;margin-left:4px;white-space:nowrap}
+.sets{display:flex;flex-direction:column;gap:7px}
+.setrow{display:flex;align-items:center;gap:8px}
+.setrow .setn{width:20px;height:20px;border-radius:50%;background:var(--surface-2);color:var(--muted);font-size:.72rem;font-weight:800;display:grid;place-items:center;flex:none}
+.setrow.done .setn{background:var(--good);color:#fff}
+.setrow input{flex:1;min-width:0;width:60px;text-align:center;font-size:1rem;padding:9px 6px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--fg);font-variant-numeric:tabular-nums}
+.setrow .x{color:var(--muted);font-weight:700}
+.setlog{border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:9px;padding:9px 10px;font-weight:800;font-size:.8rem;flex:none;min-width:46px}
+.setlog.done{background:var(--good);border-color:var(--good);color:#fff}
+.addset{margin-top:9px;border:0;background:transparent;color:var(--accent);font-weight:800;font-size:.82rem}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.restday{text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:28px 18px;box-shadow:var(--sh)}
+.restday .bigemoji{font-size:2.6rem}
+.restday h2{font-size:1.6rem;margin:6px 0}
+.pickw{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.timerbar{position:fixed;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--accent);color:#fff;text-align:center;padding:11px;font-size:1.05rem;font-weight:800;box-shadow:0 -2px 12px rgba(0,0,0,.25)}
+.timerbar button{border:1px solid rgba(255,255,255,.6);background:transparent;color:#fff;border-radius:8px;padding:4px 10px;font-weight:800;margin-left:8px;font-size:.85rem}
 .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
 .tabbar-in{max-width:720px;margin:0 auto;display:flex;width:100%}
 .tabbar button{flex:1;border:0;background:transparent;color:var(--muted);padding:9px 4px 8px;font-size:.66rem;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px}
@@ -488,6 +521,7 @@ function render(){
  document.documentElement.style.setProperty("--accent-live",p.color);
  let body="";
  if(APP.tab==="today")body=viewToday();
+ else if(APP.tab==="gym")body=viewGym();
  else if(APP.tab==="calendar")body=viewCalendar();
  else if(APP.tab==="progress")body=viewProgress();
  else if(APP.tab==="guide")body=viewGuide();
@@ -503,6 +537,7 @@ function render(){
  <div class="view">${body}</div>
  <div class="tabbar"><div class="tabbar-in">
    ${tabBtn("today","Today","☑")}
+   ${tabBtn("gym","Gym","🏋")}
    ${tabBtn("calendar","Calendar","▦")}
    ${tabBtn("progress","Progress","📈")}
    ${tabBtn("guide","Guide","📖")}
@@ -683,6 +718,19 @@ function viewProgress(){
  html+=`</div>`;
  // weigh-in log
  if(weights.length){html+=`<div class="card"><h3>Weigh-in log</h3><ul class="wlist">${weights.slice().reverse().slice(0,10).map(w=>`<li><span>${prettyDate(w.ds)}</span><b class="tnum">${w.w} kg</b></li>`).join("")}</ul></div>`;}
+ // gym progress
+ let wkouts=0,totalWk=0;for(const ds in (DB[person]||{})){const gg=DB[person][ds].gym;if(gg&&gg.done){totalWk++;if(utc(ds)>utc(addDays(today,-7)))wkouts++;}}
+ const bench=liftSeries(person,"bench"),squat=liftSeries(person,"squat"),dead=liftSeries(person,"deadlift");
+ const topOf=s=>s.length?s[s.length-1].w+" kg":"—";
+ html+=`<div class="card"><h3>Gym progress</h3>
+   <div class="statrow" style="margin-bottom:14px">
+     <div class="statbox"><div class="n tnum">${wkouts}</div><div class="l">Workouts<br>this week</div></div>
+     <div class="statbox"><div class="n tnum">${totalWk}</div><div class="l">Total<br>done</div></div>
+     <div class="statbox"><div class="n tnum" style="font-size:1.15rem">${topOf(bench)}</div><div class="l">Top bench<br>set</div></div>
+   </div>`;
+ if(bench.length>=2){html+=`<div class="small" style="margin-bottom:4px"><b>Bench Press — top set over time</b></div>`+weightSpark(bench,person);}
+ else{html+=`<p class="small">Log your sets on the Gym tab — your Bench Press progression will chart here, and your top Squat (${topOf(squat)}) and Deadlift (${topOf(dead)}) show as you go. Beating last week's numbers is how you grow.</p>`;}
+ html+=`</div>`;
  return html;
 }
 function weightSpark(weights,person){
@@ -727,6 +775,98 @@ function viewGuide(){
  return html;
 }
 
+/* ---------- GYM ---------- */
+const WORKOUTS={
+ upperA:{name:"Upper A · strength lean",ex:[
+  ["bench","Barbell Bench Press",3,5,8],["row","Barbell Row",3,6,10],["ohp","Overhead Press",3,6,10],
+  ["pulldown","Lat Pulldown / Pull-up",3,8,12],["inclinedb","Incline DB Press",2,10,12],
+  ["curl","Barbell / EZ-bar Curl",2,10,12],["pushdown","Triceps Pushdown",2,10,12]]},
+ lowerA:{name:"Lower A",ex:[
+  ["squat","Barbell Squat",3,5,8],["rdl","Romanian Deadlift",3,8,10],["legpress","Leg Press",3,10,12],
+  ["legcurl","Leg Curl",3,10,12],["calfstand","Standing Calf Raise",3,12,15],["legraise","Hanging Leg Raise (abs)",3,10,15]]},
+ upperB:{name:"Upper B · size focus",ex:[
+  ["inclinepress","Incline Barbell/DB Press",3,8,12],["pullup","Pull-up / Lat Pulldown",3,8,12],
+  ["shoulderpress","Seated DB Shoulder Press",3,10,12],["cablerow","Chest-supported / Cable Row",3,10,12],
+  ["lateral","Lateral Raises",3,12,20],["hammer","Hammer Curl",2,10,12],["oht","Overhead Triceps Ext / Dips",2,10,12]]},
+ lowerB:{name:"Lower B",ex:[
+  ["deadlift","Deadlift (or Trap-bar)",3,4,6],["frontsquat","Front / Goblet Squat",3,8,10],
+  ["lunges","Walking Lunges (each leg)",2,10,12],["legext","Leg Extension",3,12,15],
+  ["calfseat","Seated Calf Raise",3,12,15],["cablecrunch","Cable Crunch (abs)",3,12,15]]}
+};
+const SCHEDULE={1:"upperA",2:"lowerA",3:"rest",4:"upperB",5:"lowerB",6:"rest",0:"rest"};
+const EXINFO={
+ bench:{c:["Shoulder blades pinned back and down, feet flat on the floor.","Grip just wider than shoulders; lower the bar to mid-chest.","Elbows tucked ~45°, press up and slightly back — no bouncing."],a:"Dumbbell bench press or chest-press machine."},
+ row:{c:["Hinge to ~45°, flat back, bar over mid-foot.","Pull the bar to your lower ribs, squeeze shoulder blades together.","Lower under control — don't jerk with the back."],a:"One-arm dumbbell row or seated cable row."},
+ ohp:{c:["Bar on front delts, grip just outside shoulders.","Brace your core, press straight up, move head slightly through at the top.","Don't lean back excessively."],a:"Seated dumbbell shoulder press."},
+ pulldown:{c:["Chest up, pull the bar to your upper chest.","Drive elbows down and squeeze your lats.","Control the way up — no swinging."],a:"Assisted pull-up machine or band pull-ups."},
+ inclinedb:{c:["Bench at ~30°, dumbbells over upper chest.","Lower to chest level, press up smoothly (don't clank them).","Keep wrists stacked over elbows."],a:"Incline barbell or machine press."},
+ curl:{c:["Elbows pinned to your sides, curl the bar up.","Move only the forearms — no swinging the body.","Squeeze at the top, lower slowly."],a:"Dumbbell or cable curls."},
+ pushdown:{c:["Elbows locked at your sides.","Extend fully, squeeze the triceps hard.","Control the return — don't let it fly up."],a:"Overhead rope extension or bench dips."},
+ squat:{c:["Bar on upper back, feet shoulder-width, toes slightly out.","Brace, sit down and back, knees track over toes.","Hit at least parallel, drive up through mid-foot."],a:"Goblet squat or leg press."},
+ rdl:{c:["Soft knees, push hips back, keep the bar close to your legs.","Feel the hamstring stretch, keep a flat back.","Stand tall by squeezing your glutes."],a:"Dumbbell RDL or lying leg curl."},
+ legpress:{c:["Feet mid-platform, shoulder-width.","Lower until knees ~90° — don't let your lower back round.","Press up without slamming your knees straight."],a:"Hack squat or goblet squat."},
+ legcurl:{c:["Pad on your lower calves, curl heels toward glutes.","Squeeze the hamstrings, control the return.","Keep hips down on the pad."],a:"Nordic curls or Romanian deadlift."},
+ calfstand:{c:["Balls of feet on an edge, full stretch at the bottom.","Rise as high as possible, pause 1 sec at the top.","Slow negative — don't bounce."],a:"Smith-machine or leg-press calf raise."},
+ legraise:{c:["Hang from the bar, brace your core.","Raise knees (or straight legs) up, exhale as you lift.","Lower with control — don't swing."],a:"Lying leg raises or cable crunch."},
+ inclinepress:{c:["~30° incline, lower to upper chest.","Elbows ~45°, press up and slightly together.","Full range, controlled tempo."],a:"Flat press if your shoulders ache."},
+ pullup:{c:["Full dead hang, pull your chest toward the bar.","Drive elbows down and back, squeeze lats.","Use a band/assist machine if you can't do bodyweight yet."],a:"Lat pulldown."},
+ shoulderpress:{c:["Seated with back supported, dumbbells at ear height.","Press up smoothly, don't clank at the top.","Lower under control."],a:"Machine shoulder press."},
+ cablerow:{c:["Chest up, pull the handle to your belly, squeeze the back.","Don't yank with the lower back.","Let the arms stretch forward each rep."],a:"Chest-supported machine row."},
+ lateral:{c:["Slight bend in the elbows, raise out to shoulder height.","Lead with the elbows, pinkies slightly up.","Go light and slow — this is for shape, not ego."],a:"Cable lateral raises."},
+ hammer:{c:["Neutral grip (palms facing each other).","Curl without swinging, squeeze at the top.","Hits biceps and forearms."],a:"Rope hammer curls on a cable."},
+ oht:{c:["Elbows point forward, lower the weight behind your head.","Extend fully, keep elbows tucked in.","Control the stretch at the bottom."],a:"Rope overhead extension, or bench/parallel-bar dips."},
+ deadlift:{c:["Bar over mid-foot, grip just outside the knees.","Flat back, brace hard, push the floor away with your legs.","Lock out with glutes — don't lean back. Lower controlled."],a:"Trap-bar deadlift or Romanian deadlift."},
+ frontsquat:{c:["Bar on front delts (or hold one dumbbell at your chest).","Elbows high, torso upright, sit straight down.","Drive up through mid-foot."],a:"Goblet squat with a dumbbell."},
+ lunges:{c:["Step forward, drop the back knee toward the floor.","Front knee over ankle, torso tall.","Push up through the front heel."],a:"Split squats or leg press."},
+ legext:{c:["Back against the pad, extend knees fully.","Squeeze the quads at the top 1 sec.","Lower slowly."],a:"Goblet squats if there's no machine."},
+ calfseat:{c:["Knees bent 90°, balls of feet on the pad.","Full stretch down, high squeeze up.","Slow reps, pause at the top."],a:"Standing calf raise."},
+ cablecrunch:{c:["Kneel, rope beside your head, crunch down with the abs.","Round your spine — don't pull with the arms.","Squeeze hard, control back up."],a:"Weighted crunch or hanging leg raise."}
+};
+function gymRec(person,date){const r=rec(person,date);if(!r.gym)r.gym={w:null,ex:{},done:false};r.gym.ex=r.gym.ex||{};return r.gym;}
+function activeWorkout(person,date){const g=gymRec(person,date);if(g.w)return g.w;const d=parseD(date);return SCHEDULE[new Date(d.y,d.m-1,d.d).getDay()];}
+function exLog(person,date,exId){const g=gymRec(person,date);g.ex[exId]=g.ex[exId]||{sets:[]};return g.ex[exId];}
+function findExName(exId){for(const k in WORKOUTS){const e=WORKOUTS[k].ex.find(x=>x[0]===exId);if(e)return e[1];}return exId;}
+function lastLog(person,exId,beforeDate){const days=DB[person]?Object.keys(DB[person]):[];let best=null;for(const ds of days){if(utc(ds)>=utc(beforeDate))continue;const g=DB[person][ds]&&DB[person][ds].gym;const e=g&&g.ex&&g.ex[exId];if(e&&e.sets){const done=e.sets.filter(s=>s.done&&s.w!=null);if(done.length&&(!best||utc(ds)>utc(best.ds)))best={ds,sets:done};}}return best;}
+function liftSeries(person,exId){const days=DB[person]?Object.keys(DB[person]):[];const out=[];for(const ds of days){const g=DB[person][ds]&&DB[person][ds].gym;const e=g&&g.ex&&g.ex[exId];if(e&&e.sets){const ws=e.sets.filter(s=>s.done&&s.w!=null).map(s=>s.w);if(ws.length)out.push({ds,w:Math.max(...ws)});}}out.sort((a,b)=>utc(a.ds)-utc(b.ds));return out;}
+function dateHeaderGym(isToday,date){let h=`<div class="datehead"><button class="navd" data-act="shift" data-n="-1">‹</button><div style="text-align:center"><div class="d-main">${isToday?"Today":prettyDate(date).split(",")[0]}</div><div class="d-sub">${prettyDate(date)}</div></div><button class="navd" data-act="shift" data-n="1">›</button></div>`;if(!isToday)h+=`<div style="text-align:center;margin:-6px 0 12px"><button class="todaybtn" data-act="gotoday">Jump to today</button></div>`;return h;}
+function viewGym(){
+ const person=APP.person,date=APP.date,p=PEOPLE[person],isToday=date===todayStr(),g=gymRec(person,date),w=activeWorkout(person,date);
+ let html=dateHeaderGym(isToday,date);
+ html+=`<div class="restrow"><span>⏱ Rest</span>${[60,90,120,180].map(s=>`<button data-act="rest" data-sec="${s}">${s<120?s+"s":(s/60)+" min"}</button>`).join("")}</div>`;
+ if(w==="rest"){
+   html+=`<div class="restday"><div class="bigemoji">😴</div><h2>Rest day</h2><p class="muted">Recovery is when muscle actually grows. Eat well, sleep 7–8 h, maybe a light walk. ${p.goal==="Fat loss"?"A brisk 30-min walk today helps your fat loss.":"Back at it tomorrow, stronger."}</p>
+   <p class="small" style="margin-top:14px">Want to train anyway? Pick a session:</p>
+   <div class="pickw">${Object.keys(WORKOUTS).map(k=>`<button class="btn" data-act="setw" data-w="${k}">${WORKOUTS[k].name}</button>`).join("")}</div></div>`;
+   return html;
+ }
+ const W=WORKOUTS[w];
+ html+=`<div class="wkhead"><div><div class="chip">${isToday?"Today's session":"Session"}</div><h2>${W.name}</h2></div>${g.done?`<span class="donetag">✓ Done</span>`:""}</div>`;
+ const lbl={upperA:"Upper A",lowerA:"Lower A",upperB:"Upper B",lowerB:"Lower B"};
+ html+=`<div class="switchw">Change:${Object.keys(WORKOUTS).map(k=>`<button class="${k===w?"on":""}" data-act="setw" data-w="${k}">${lbl[k]}</button>`).join("")}<button data-act="setw" data-w="rest">Rest</button></div>`;
+ html+=`<div class="warm">🔥 <b>Warm up first:</b> 5 min light cardio, then 2 light ramp-up sets on your first lift. Take each working set to about 1–2 reps from failure. Rest 2–3 min on the big lifts, 60–90 sec on the rest.</div>`;
+ W.ex.forEach(([exId,name,sets,lo,hi])=>{
+   const log=exLog(person,date,exId),last=lastLog(person,exId,date);
+   const allDone=(log.sets||[]).length>=sets&&log.sets.slice(0,sets).every(s=>s&&s.done);
+   html+=`<div class="exc ${allDone?"done":""}"><div class="exc-h"><div style="flex:1"><div class="exname">${name}</div><div class="extarget">${sets} sets × ${lo}–${hi} reps</div></div><button class="info-i" data-act="exinfo" data-ex="${exId}">i</button></div>`;
+   if(last){const ls=last.sets.map(s=>`${s.w}kg×${s.r}`).join(", ");const topHit=last.sets.length>=sets&&last.sets.every(s=>s.r>=hi);html+=`<div class="lastline">Last (${DOW[new Date(parseD(last.ds).y,parseD(last.ds).m-1,parseD(last.ds).d).getDay()]} ${parseD(last.ds).d}): ${ls}${topHit?`<span class="uphint">↑ add weight today</span>`:""}</div>`;}
+   else html+=`<div class="lastline">First time — start light and nail the form.</div>`;
+   const nRows=Math.max(sets,(log.sets||[]).length);
+   html+=`<div class="sets">`;
+   for(let i=0;i<nRows;i++){const s=(log.sets||[])[i]||{};const sug=last&&last.sets[i]?last.sets[i].w:(last&&last.sets[0]?last.sets[0].w:"");
+     html+=`<div class="setrow ${s.done?"done":""}"><span class="setn">${i+1}</span><input class="win" id="w_${exId}_${i}" type="number" inputmode="decimal" placeholder="${sug!==""?sug+" kg":"kg"}" value="${s.w!=null?s.w:""}"><span class="x">×</span><input class="rin" id="r_${exId}_${i}" type="number" inputmode="numeric" placeholder="${lo}-${hi}" value="${s.r!=null?s.r:""}"><button class="setlog ${s.done?"done":""}" data-act="logset" data-ex="${exId}" data-i="${i}">${s.done?"✓":"log"}</button></div>`;}
+   html+=`</div><button class="addset" data-act="addset" data-ex="${exId}">+ add set</button></div>`;
+ });
+ html+=`<button class="btn full ${g.done?"":"primary"}" data-act="gymdone">${g.done?"✓ Completed — tap to reopen":"Finish &amp; mark workout complete"}</button>`;
+ html+=`<div class="disclaimer">Start lighter than you think and build up. Warm up, keep good form, and stop if you feel sharp pain. Not medical advice.</div>`;
+ return html;
+}
+
+/* ---------- rest timer (persists across re-render; lives outside #app) ---------- */
+let TIMER={end:0,iv:null};
+function renderTimer(){const left=Math.max(0,Math.round((TIMER.end-Date.now())/1000));let b=document.getElementById("timerbar");if(left<=0&&TIMER.end){stopTimer();try{navigator.vibrate&&navigator.vibrate([200,100,200]);}catch(e){}return;}if(TIMER.end<=0)return;if(!b){b=document.createElement("div");b.id="timerbar";b.className="timerbar";document.body.appendChild(b);}b.innerHTML=`⏱ Rest ${Math.floor(left/60)}:${String(left%60).padStart(2,"0")} <button data-act="t30">+30s</button><button data-act="tstop">Skip</button>`;}
+function startTimer(sec){TIMER.end=Date.now()+sec*1000;if(TIMER.iv)clearInterval(TIMER.iv);TIMER.iv=setInterval(renderTimer,300);renderTimer();}
+function stopTimer(){TIMER.end=0;if(TIMER.iv){clearInterval(TIMER.iv);TIMER.iv=null;}const b=document.getElementById("timerbar");if(b)b.remove();}
+
 /* ---------- modals ---------- */
 const modal=document.getElementById("modal"),sheet=document.getElementById("sheet");
 function openSheet(html){sheet.innerHTML=html;modal.classList.add("show");}
@@ -735,6 +875,7 @@ modal.addEventListener("click",e=>{if(e.target===modal)closeSheet();});
 function infoObj(g){openSheet(`<div class="sheet-h"><h3>${g.t}</h3><button class="x" data-act="close">×</button></div><div class="infobody"><p class="lead">${g.lead}</p><ol class="steps">${g.steps.map(s=>`<li>${s}</li>`).join("")}</ol></div>`);}
 function infoSheet(ing){infoObj(ING[ing].info);}
 function vinfoSheet(kind,idx){const v=VARIANTS[kind][idx];infoObj({t:v.name,lead:v.lead,steps:v.steps});}
+function exInfoSheet(exId){const g=EXINFO[exId]||{c:[],a:""};openSheet(`<div class="sheet-h"><h3>${findExName(exId)}</h3><button class="x" data-act="close">×</button></div><div class="infobody"><p class="lead">Form — do it right, not heavy:</p><ol class="steps">${g.c.map(s=>`<li>${s}</li>`).join("")}</ol>${g.a?`<p class="small" style="margin-top:12px"><b>No equipment / alternative:</b> ${g.a}</p>`:""}</div>`);}
 function swapSheet(slot){
  const person=APP.person,who=PEOPLE[person].who,cur=slotForPlanOrSwap(person,slot);
  const cat=DISH[planForIndex(dayIndex(APP.date))[slot]].cat;
@@ -801,6 +942,14 @@ document.addEventListener("click",e=>{
  else if(act==="itemswap"){setIO(person,date,t.dataset.slot,t.dataset.key,{to:t.dataset.to,q:Number(t.dataset.q)});closeSheet();render();}
  else if(act==="itemvar"){setIO(person,date,t.dataset.slot,t.dataset.key,{vi:Number(t.dataset.idx)});closeSheet();render();}
  else if(act==="itemundo"){clearIO(person,date,t.dataset.slot,t.dataset.key);closeSheet();render();}
+ else if(act==="rest"){startTimer(Number(t.dataset.sec));}
+ else if(act==="t30"){if(TIMER.end)TIMER.end+=30000;renderTimer();}
+ else if(act==="tstop"){stopTimer();}
+ else if(act==="setw"){gymRec(person,date).w=t.dataset.w;saveDB();render();}
+ else if(act==="exinfo"){exInfoSheet(t.dataset.ex);}
+ else if(act==="logset"){const ex=t.dataset.ex,i=Number(t.dataset.i),log=exLog(person,date,ex);log.sets[i]=log.sets[i]||{};const cur=log.sets[i];if(cur.done){cur.done=false;}else{const wv=document.getElementById("w_"+ex+"_"+i),rv=document.getElementById("r_"+ex+"_"+i);if(wv&&wv.value!=="")cur.w=Number(wv.value);if(rv&&rv.value!=="")cur.r=Number(rv.value);cur.done=true;startTimer(90);}saveDB();render();}
+ else if(act==="addset"){exLog(person,date,t.dataset.ex).sets.push({});saveDB();render();}
+ else if(act==="gymdone"){const g=gymRec(person,date);g.done=!g.done;saveDB();render();}
  else if(act==="topup"){const r=rec(person,date);const b=BOOST.find(x=>x.id===t.dataset.b);r.extras.push({id:b.id,label:b.label,mac:b.mac});saveDB();render();}
  else if(act==="rmextra"){const r=rec(person,date);r.extras.splice(Number(t.dataset.i),1);saveDB();render();}
  else if(act==="water"){const r=rec(person,date);r.water=Math.max(0,Math.min(20,r.water+Number(t.dataset.n)));saveDB();render();}
@@ -819,13 +968,14 @@ document.addEventListener("click",e=>{
  else if(act==="dorestore"){try{const v=document.getElementById("rs").value.trim();const obj=JSON.parse(decodeURIComponent(escape(atob(v))));if(obj&&typeof obj==="object"){DB=obj;saveDB();closeSheet();APP.date=todayStr();render();}}catch(err){alert&&0;const b=document.getElementById("rs");if(b)b.style.borderColor="var(--bad)";}}
 });
 document.addEventListener("change",e=>{
- const t=e.target.closest("[data-act]");if(!t)return;
+ const el=e.target;
+ if(el.classList&&(el.classList.contains("win")||el.classList.contains("rin"))){const parts=el.id.split("_"),field=parts[0],ex=parts[1],i=Number(parts[2]),log=exLog(APP.person,APP.date,ex);log.sets[i]=log.sets[i]||{};if(el.value!=="")log.sets[i][field==="w"?"w":"r"]=Number(el.value);saveDB();return;}
+ const t=el.closest&&el.closest("[data-act]");if(!t)return;
  if(t.dataset.act==="supp"){const r=rec(APP.person,APP.date);r.supps[t.dataset.k]=t.checked;saveDB();}
  if(t.id==="themeToggle"){document.documentElement.setAttribute("data-theme",t.checked?"dark":"light");}
 });
 
 render();
 </script>
-
 </body>
 </html>
